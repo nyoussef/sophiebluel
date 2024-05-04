@@ -1,10 +1,43 @@
 let works = [];
 let categories = [];
+const token = localStorage.getItem('token');
 
 async function main ()  {
     works = await getWorks();
     categories = await getCategories();
-    await displayCategories();
+    if (!token) {
+        await displayCategories();        
+    }
+    else{
+        await displayWorks(works);
+        const body = document.querySelector('body');
+        const projectTitle = document.querySelector('#projectTitle');
+        const header = document.querySelector('header');
+        const authButton = document.querySelector('.auth_button');
+        authButton.innerHTML = "";
+        const logoutButton = document.createElement('div');
+        logoutButton.innerHTML = 'logout';
+        const logout = () => {
+            localStorage.removeItem('token'); 
+            window.location.href="../index.html";       
+        }
+        logoutButton.addEventListener('click', logout);
+        authButton.appendChild(logoutButton);
+        const topBar = document.createElement('div'); 
+        const topBarText = document.createElement('span');       
+        topBarText.className = "topBarText";
+        topBarText.innerHTML = '<i class="fa-regular fa-pen-to-square"></i> Mode édition';
+        topBar.className = "topBar";
+        header.classList.add("mt20");
+        topBar.appendChild(topBarText);
+        body.appendChild(topBar);
+        const editButton = document.createElement('button');
+        editButton.className = "editButton";
+        editButton.innerHTML = '<i class="fa-regular fa-pen-to-square"></i> modifier';
+        projectTitle.appendChild(editButton);
+        
+
+    }
 }
 
 main();
@@ -22,7 +55,7 @@ async function getCategories() {
 const gallery= document.querySelector('.gallery');
 const filters = document.querySelector('.filters');
 
-function displayWorks(workList) {
+async function displayWorks(workList) {
     for (let index = 0; index < workList.length; index++) {
         const figure = document.createElement('figure');
         const img = document.createElement('img');
