@@ -1,6 +1,5 @@
 let works = [];
 let categories = [];
-//Récupération éléments du DOM
 const body = document.querySelector("body");
 const projectTitle = document.querySelector("#projectTitle");
 const header = document.querySelector("header");
@@ -10,10 +9,19 @@ const modalGallery = document.querySelector(".modalGallery");
 const xmark = document.querySelector(".modalContent .fa-xmark");
 const arrowLeft = document.querySelector(".modalContent .fa-arrow-left");
 const modalTitle = document.querySelector(".modalContent h2");
+const modalForm = document.querySelector(".modalContent form");
+const formTitle = document.querySelector("form #title");
+const formCategory = document.querySelector("form #category");
+const formButton = document.querySelector(".formButton");
 const addButton = document.querySelector(".addButton");
 const token = localStorage.getItem("token");
 const gallery = document.querySelector(".gallery");
 const filters = document.querySelector(".filters");
+const previewImg = document.querySelector(".fileContainer img");
+const fileInput = document.querySelector(".fileContainer input");
+const fileLabel = document.querySelector(".fileContainer label");
+const fileIcon = document.querySelector(".fileContainer .fa-image");
+const fileParagraph = document.querySelector(".fileContainer p");
 
 async function main() {
   works = await getWorks();
@@ -22,52 +30,29 @@ async function main() {
     await displayCategories();
   } else {
     await displayWorks(works);
-    //Modification bouton de connexion
-    authButton.innerHTML = "";
-    const logoutButton = document.createElement("div");
-    logoutButton.innerHTML = "logout";
-    const logout = () => {
-      localStorage.removeItem("token");
-      window.location.href = "../index.html";
-    };
-    logoutButton.addEventListener("click", logout);
-    authButton.appendChild(logoutButton);
-    //Création topbar
-    const topBar = document.createElement("div");
-    const topBarText = document.createElement("span");
-    topBarText.className = "topBarText";
-    topBarText.innerHTML =
-      '<i class="fa-regular fa-pen-to-square"></i> Mode édition';
-    topBar.className = "topBar";
-    header.classList.add("mt20");
-    topBar.appendChild(topBarText);
-    body.appendChild(topBar);
-    //Création bouton modifier
-    const editButton = document.createElement("button");
-    editButton.className = "editButton";
-    editButton.innerHTML =
-      '<i class="fa-regular fa-pen-to-square"></i> modifier';
-    projectTitle.appendChild(editButton);
-    //Ouverture modal
-    editButton.addEventListener("click", () => {
-      modalContainer.style.display = "flex";
+    editionMode();
+    closeModal();
+    //Retour Modal Galerie
+    arrowLeft.addEventListener("click", () => {
+      clearModal();
       displayModalWorks(works);
     });
-    //Fermeture modal
-    xmark.addEventListener("click", () => {
-      clearModal();
-    });
-    modalContainer.addEventListener("click", (e) => {
-      if (e.target.className == "modalContainer") {
-        clearModal();
-      }
-    });
-    addButton.addEventListener('click', () => {
+    //Modal Ajout
+    addButton.addEventListener("click", () => {
+      displayModalCategories();
+      addWork();
       arrowLeft.style.display = "flex";
-      modalTitle.innerHTML = "Ajout Photo";
+      modalTitle.innerHTML = "Ajout photo";
       modalGallery.style.display = "none";
       addButton.style.display = "none";
-    })
+      modalForm.style.display = "flex";
+    });
+    //Préchargement image
+    previewImage();
+    previewImg.addEventListener("click", () => {
+      fileInput.click();
+      previewImage();
+    });
   }
 }
 
@@ -133,16 +118,21 @@ function clearActiveFilter() {
   gallery.innerHTML = "";
 }
 
-function clearModal() {  
-  modalContainer.style.display = "none";
+function clearModal() {
   arrowLeft.style.display = "none";
   modalGallery.style.display = "flex";
   addButton.style.display = "flex";
+  modalForm.style.display = "none";
   modalGallery.innerHTML = "";
-  modalTitle.innerHTML = "Galerie photo";
+  previewImg.src = "";
+  previewImg.style.display = "none";
+  fileLabel.style.display = "flex";
+  fileIcon.style.display = "flex";
+  fileParagraph.style.display = "flex";
 }
 
 async function displayModalWorks(workList) {
+  modalTitle.innerHTML = "Galerie photo";
   modalGallery.innerHTML = "";
   for (let index = 0; index < workList.length; index++) {
     const figure = document.createElement("figure");
@@ -159,28 +149,145 @@ async function displayModalWorks(workList) {
   }
 }
 
+async function displayModalCategories() {
+  categories = await getCategories();
+  categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.id;
+    option.textContent = category.name;
+    formCategory.appendChild(option);
+  });
+}
+
+function previewImage() {
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        previewImg.src = e.target.result;
+        previewImg.alt = "Prévisualisation de l'image";
+        previewImg.style.display = "flex";
+        fileLabel.style.display = "none";
+        fileIcon.style.display = "none";
+        fileParagraph.style.display = "none";
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+function editionMode() {
+  //Modification bouton de connexion
+  authButton.innerHTML = "";
+  const logoutButton = document.createElement("div");
+  logoutButton.innerHTML = "logout";
+  const logout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "../index.html";
+  };
+  logoutButton.addEventListener("click", logout);
+  authButton.appendChild(logoutButton);
+  //Création topbar
+  const topBar = document.createElement("div");
+  const topBarText = document.createElement("span");
+  topBarText.className = "topBarText";
+  topBarText.innerHTML =
+    '<i class="fa-regular fa-pen-to-square"></i> Mode édition';
+  topBar.className = "topBar";
+  header.classList.add("mt20");
+  topBar.appendChild(topBarText);
+  body.appendChild(topBar);
+  //Création bouton modifier
+  const editButton = document.createElement("button");
+  editButton.className = "editButton";
+  editButton.innerHTML = '<i class="fa-regular fa-pen-to-square"></i> modifier';
+  projectTitle.appendChild(editButton);
+  //Ouverture modal
+  editButton.addEventListener("click", () => {
+    modalContainer.style.display = "flex";
+    displayModalWorks(works);
+  });
+}
+
+function closeModal() {
+  //Fermeture modal
+  xmark.addEventListener("click", () => {
+    modalContainer.style.display = "none";
+    clearModal();
+  });
+  modalContainer.addEventListener("click", (e) => {
+    if (e.target.className == "modalContainer") {
+      modalContainer.style.display = "none";
+      clearModal();
+    }
+  });
+}
+
 async function deleteWork(id) {
   const trashes = document.getElementsByClassName("fa-trash-can");
   for (const trash of trashes) {
     if (trash.id == id) {
       const init = {
         method: "DELETE",
-        headers: { 
-          "accept": "*/*",
-          "Authorization": 'Bearer ' + token,
-         },
+        headers: {
+          accept: "*/*",
+          Authorization: "Bearer " + token,
+        },
       };
       fetch("http://localhost:5678/api/works/" + id, init)
-        .then(response => {
+        .then((response) => {
           if (response.status !== 204) {
             console.log("Erreur lors de la suppression");
-          } 
+          }
         })
-        .then(async data => {
-          const works = await getWorks();
+        .then(async (data) => {
+          works = await getWorks();
           displayWorks(works);
           displayModalWorks(works);
         });
     }
   }
+}
+
+async function addWork() {
+  checkInputsFilled();
+  modalForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(modalForm);
+    fetch("http://localhost:5678/api/works/", {
+      method: "POST",
+      body: formData,
+      headers: {
+        Authorization: "Bearer " + token,
+        accept: "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then(async (data) => {
+        works = await getWorks();
+        displayWorks(works);
+        displayModalWorks(works);
+        modalContainer.style.display = "none";
+        clearModal();
+      });
+  });
+}
+
+function checkInputsFilled() {
+  modalForm.addEventListener("input", () => {
+    if (
+      fileInput.value !== "" &&
+      formTitle.value !== "" &&
+      formCategory.value !== ""
+    ) {
+      formButton.disabled = false;
+      formButton.style.backgroundColor = "#1d6154";
+      formButton.classList.add("hoverButton");
+    } else {
+      formButton.disabled = true;
+      formButton.style.backgroundColor = "#A7A7A7";
+      formButton.classList.remove("hoverButton");
+    }
+  });
 }

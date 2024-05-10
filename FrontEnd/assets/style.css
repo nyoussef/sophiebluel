@@ -231,6 +231,10 @@ button:hover {
   cursor: pointer;
 }
 
+button[disabled]:hover {
+  cursor: default;
+}
+
 .active-filter {
   background-color: #1d6154;
   color: white;
@@ -298,6 +302,7 @@ input[type="submit"], .addButton{
   margin: 2em auto;
   width: 180px;
   text-align: center;
+  font-size: 16px;
   border-radius: 60px;
 }
 
@@ -306,7 +311,7 @@ input[type="submit"], .addButton{
 	padding: 10px 40px;
 }
 
-.addButton:hover{
+.hoverButton:hover{
   background-color: #26695d;
 }
 
@@ -441,4 +446,90 @@ footer nav ul {
   right: 3px;
   top: 3px;
   cursor: pointer;
+}
+
+.modalContent form{
+  display: none;
+  flex-direction: column;
+  width: 70%;
+}
+
+.formContent{  
+  display: flex;
+  flex-direction: column;
+  height: 350px;
+  gap: 10px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid lightgray;
+}
+
+.fileContainer{
+  background-color: #E8F1F6;
+  min-height: 170px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 3px;
+}
+
+.fileContainer label{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #CBD6DC;
+  border-radius: 50px;
+  padding: 15px 40px;
+  margin: 10px 0;
+}
+
+.fileContainer input{
+ display: none;
+}
+
+.fileContainer .fa-image{
+ font-size: 60px;
+ color: #B9C5CC;
+ margin-top: 10px;
+}
+
+.fileContainer img{
+ max-width: 100%;
+ height: 100%;
+ /* display: none; */
+}
+
+.formContent label{
+  font-family: 'Work Sans';
+  font-size: 14px;
+  color: #3D3D3D;
+}
+
+.formContent input, .formContent select{
+  border: none;
+  box-shadow: 0px 4px 14px 0px #00000017;
+  height: 40px;
+  padding-left: 15px;
+  font-family: 'Work Sans';
+  font-size: 14px;
+  color: #444444;
+}
+
+.formContent input:focus, .formContent select:focus{
+  outline: none;
+}
+
+.formButton{
+  width: 70%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border: none;
+  margin: auto;
+  font-family: "Syne";
+  color: white;
+  background-color: #A7A7A7;
+  border-radius: 60px;
 }
