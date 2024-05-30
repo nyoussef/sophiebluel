@@ -15,7 +15,6 @@ form.addEventListener("submit", (e) => {
     email: userEmail.value,
     password: userPassword.value,
   };
-  console.log(JSON.stringify(postData));
   fetch(apiUrl, {
     method: "POST",
     headers: {

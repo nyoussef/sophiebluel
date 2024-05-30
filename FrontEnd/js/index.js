@@ -4,24 +4,70 @@ const body = document.querySelector("body");
 const projectTitle = document.querySelector("#projectTitle");
 const header = document.querySelector("header");
 const authButton = document.querySelector(".auth_button");
-const modalContainer = document.querySelector(".modalContainer");
-const modalGallery = document.querySelector(".modalGallery");
-const xmark = document.querySelector(".modalContent .fa-xmark");
-const arrowLeft = document.querySelector(".modalContent .fa-arrow-left");
-const modalTitle = document.querySelector(".modalContent h2");
-const modalForm = document.querySelector(".modalContent form");
-const formTitle = document.querySelector("form #title");
-const formCategory = document.querySelector("form #category");
-const formButton = document.querySelector(".formButton");
-const addButton = document.querySelector(".addButton");
 const token = localStorage.getItem("token");
 const gallery = document.querySelector(".gallery");
 const filters = document.querySelector(".filters");
-const previewImg = document.querySelector(".fileContainer img");
-const fileInput = document.querySelector(".fileContainer input");
-const fileLabel = document.querySelector(".fileContainer label");
-const fileIcon = document.querySelector(".fileContainer .fa-image");
-const fileParagraph = document.querySelector(".fileContainer p");
+//Modal
+const modalContainer = document.createElement("div");
+modalContainer.className = "modalContainer display-none";
+const modalContent = document.createElement("div");
+modalContent.className = "modalContent";
+const xmark = document.createElement("i");
+xmark.className = "fa-solid fa-xmark";
+const modalTitle = document.createElement("h2");
+const modalGallery = document.createElement("div");
+modalGallery.className = "modalGallery display-flex";
+const addButton = document.createElement("button");
+addButton.className = "addButton hoverButton display-flex";
+addButton.innerHTML = "Ajouter une photo";
+//Modal Ajout
+const arrowLeft = document.createElement("i");
+arrowLeft.className = "fa-solid fa-arrow-left display-none";
+const modalForm = document.createElement("form");
+modalForm.setAttribute("method", "post");
+modalForm.setAttribute("enctype", "multipart/form-data");
+modalForm.className = "display-none";
+const formContent = document.createElement("div");
+formContent.className = "formContent";
+const fileContainer = document.createElement("div");
+fileContainer.className = "fileContainer";
+const fileIcon = document.createElement("i");
+fileIcon.className = "fa-regular fa-image";
+const fileLabel = document.createElement("label");
+fileLabel.setAttribute("for", "file");
+fileLabel.className = "display-flex";
+fileLabel.innerHTML = "+ Ajouter photo";
+const fileInput = document.createElement("input");
+fileInput.type = "file";
+fileInput.id = "file";
+fileInput.name = "image";
+const fileParagraph = document.createElement("p");
+fileParagraph.innerHTML = "jpg, png : 4mo max";
+const fileImage = document.createElement("img");
+fileImage.src = "";
+fileImage.alt = "";
+const titleLabel = document.createElement("label");
+titleLabel.setAttribute("for", "title");
+titleLabel.innerHTML = "Titre";
+const formTitle = document.createElement("input");
+formTitle.type = "text";
+formTitle.id = "title";
+formTitle.name = "title";
+const categoriesLabel = document.createElement("label");
+categoriesLabel.setAttribute("for", "category");
+categoriesLabel.innerHTML = "Catégorie";
+const formCategories = document.createElement("select");
+formCategories.name = "category";
+formCategories.id = "category";
+const defaultCategoryOption = document.createElement("option");
+defaultCategoryOption.value = "";
+defaultCategoryOption.text = "Sélectionnez une catégorie";
+defaultCategoryOption.disabled = true;
+defaultCategoryOption.selected = true;
+const formButton = document.createElement("button");
+formButton.className = "formButton";
+formButton.innerHTML = "Valider";
+formButton.setAttribute("disabled", "disabled");
 
 async function main() {
   works = await getWorks();
@@ -32,24 +78,25 @@ async function main() {
     await displayWorks(works);
     editionMode();
     closeModal();
+    checkInputsFilled(); 
     //Retour Modal Galerie
     arrowLeft.addEventListener("click", () => {
       clearModal();
+      clearAdd();
       displayModalWorks(works);
     });
     //Modal Ajout
     addButton.addEventListener("click", () => {
       displayModalCategories();
-      addWork();
-      arrowLeft.style.display = "flex";
+      toggleDisplay(arrowLeft, "flex");
       modalTitle.innerHTML = "Ajout photo";
-      modalGallery.style.display = "none";
-      addButton.style.display = "none";
-      modalForm.style.display = "flex";
+      toggleDisplay(modalGallery, "none");
+      toggleDisplay(addButton, "none");
+      toggleDisplay(modalForm, "flex");
     });
     //Préchargement image
     previewImage();
-    previewImg.addEventListener("click", () => {
+    fileImage.addEventListener("click", () => {
       fileInput.click();
       previewImage();
     });
@@ -69,6 +116,7 @@ async function getCategories() {
 }
 
 async function displayWorks(workList) {
+  gallery.innerHTML = "";
   for (let index = 0; index < workList.length; index++) {
     const figure = document.createElement("figure");
     const img = document.createElement("img");
@@ -83,10 +131,9 @@ async function displayWorks(workList) {
 }
 
 async function displayCategories() {
-  const categoriesList = await getCategories();
-  categoriesList.push({ name: "Tous", id: "" });
-  categoriesList.sort((a, b) => a.id - b.id);
-  categoriesList.forEach(async (category) => {
+  categories.push({ name: "Tous", id: "" });
+  categories.sort((a, b) => a.id - b.id);
+  categories.forEach(async (category) => {
     const button = document.createElement("button");
     button.classList.add("filter-button");
     button.id = category.id;
@@ -105,7 +152,7 @@ async function displayWorksByCategories() {
   if (this.id == "") {
     displayWorks(works);
   } else {
-    displayWorks(works.filter((p) => p.categoryId == this.id));
+    displayWorks(works.filter((work) => work.categoryId == this.id));
   }
   this.classList.add("active-filter");
 }
@@ -118,17 +165,43 @@ function clearActiveFilter() {
   gallery.innerHTML = "";
 }
 
-function clearModal() {
-  arrowLeft.style.display = "none";
-  modalGallery.style.display = "flex";
-  addButton.style.display = "flex";
-  modalForm.style.display = "none";
-  modalGallery.innerHTML = "";
-  previewImg.src = "";
-  previewImg.style.display = "none";
-  fileLabel.style.display = "flex";
-  fileIcon.style.display = "flex";
-  fileParagraph.style.display = "flex";
+function editionMode() {
+  //Modification bouton de connexion
+  authButton.innerHTML = "";
+  const logoutButton = document.createElement("div");
+  logoutButton.innerHTML = "logout";
+  const logout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "../index.html";
+  };
+  logoutButton.addEventListener("click", logout);
+  authButton.appendChild(logoutButton);
+  //Création topbar
+  const topBar = document.createElement("div");
+  const topBarText = document.createElement("span");
+  topBarText.className = "topBarText";
+  topBarText.innerHTML = '<i class="fa-regular fa-pen-to-square"></i> Mode édition';
+  topBar.className = "topBar";
+  header.classList.add("mt20");
+  topBar.appendChild(topBarText);
+  body.appendChild(topBar);
+  //Création bouton modifier
+  const editButton = document.createElement("button");
+  editButton.className = "editButton";
+  editButton.innerHTML = '<i class="fa-regular fa-pen-to-square"></i> modifier';
+  projectTitle.appendChild(editButton);
+  //Ouverture modal
+  editButton.addEventListener("click", () => {
+    toggleDisplay(modalContainer, "flex");
+    displayModalWorks(works);
+    appendChildren(fileContainer, fileIcon, fileLabel, fileInput, fileParagraph, fileImage);
+    appendChildren(formCategories, defaultCategoryOption);
+    appendChildren(formContent, fileContainer, titleLabel, formTitle, categoriesLabel, formCategories);
+    appendChildren(modalForm, formContent, formButton);
+    appendChildren(modalContent, arrowLeft, xmark, modalTitle, modalGallery, addButton, modalForm);
+    appendChildren(modalContainer, modalContent);
+    appendChildren(body, modalContainer);
+  });
 }
 
 async function displayModalWorks(workList) {
@@ -149,15 +222,125 @@ async function displayModalWorks(workList) {
   }
 }
 
+async function deleteWork(id) {
+    const init = {
+      method: "DELETE",
+      headers: {
+        accept: "*/*",
+        Authorization: "Bearer " + token,
+      },
+    };
+    fetch("http://localhost:5678/api/works/" + id, init)
+    .then((response) => {
+      if (!response.ok) {
+        return alert("Erreur lors de la suppression");
+      }
+    })
+    .then(async (data) => {
+      works = await getWorks();
+      displayWorks(works);
+      displayModalWorks(works);
+      clearAdd();
+    });
+}
+
+
+function appendChildren(parent, ...children) {
+  children.forEach((child) => {
+    parent.appendChild(child);
+  });
+}
+
+function closeModal() {
+  //Fermeture modal
+  xmark.addEventListener("click", () => {
+    toggleDisplay(modalContainer, "none");
+    clearModal();
+  });
+  modalContainer.addEventListener("click", (e) => {
+    if (e.target.className == "modalContainer display-flex") {
+      clearModal();
+      toggleDisplay(modalContainer, "none");
+    }
+  });
+}
+
+function clearModal() {
+  toggleDisplay(arrowLeft, "none");
+  toggleDisplay(modalGallery, "flex");
+  toggleDisplay(addButton, "flex");
+  toggleDisplay(modalForm, "none");
+  modalGallery.innerHTML = "";
+  clearAdd();
+}
+
 async function displayModalCategories() {
-  categories = await getCategories();
   categories.forEach((category) => {
     const option = document.createElement("option");
     option.value = category.id;
     option.textContent = category.name;
-    formCategory.appendChild(option);
+    formCategories.appendChild(option);
   });
 }
+
+function checkInputsFilled() {
+  modalForm.addEventListener("input", () => {
+    if (fileInput.value !== "" && formTitle.value !== "" && formCategories.value !== "") {
+      formButton.disabled = false;
+      changeBackgroundColor(formButton, 'enabled');
+      formButton.classList.add("hoverButton");
+    } else {
+      formButton.disabled = true;
+      changeBackgroundColor(formButton, 'disabled');
+      formButton.classList.remove("hoverButton");
+    }
+  });
+}
+
+function clearAdd() {
+  toggleDisplay(fileImage, "none");
+  fileImage.src = "";
+  formTitle.value = "";
+  formCategories.value = "";
+  toggleDisplay(fileLabel, "flex");
+  toggleDisplay(fileIcon, "flex");
+  toggleDisplay(fileParagraph, "flex");
+  formButton.disabled = true;
+  changeBackgroundColor(formButton, 'disabled');
+  formButton.classList.remove("hoverButton");
+  clearCategoryList();
+}
+
+function clearCategoryList() {
+  const removeOptions = document.querySelectorAll('#category option:not([value=""])');
+  removeOptions.forEach(option => {
+    option.remove();
+  });
+}
+
+////////// Ajout Work \\\\\\\\\\
+modalForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!fileInput.files[0] || !formTitle.value || !formCategories.value) {
+    return alert("Veuillez remplir tous les champs du formulaire");
+  }
+  const formData = new FormData(modalForm);
+  fetch("http://localhost:5678/api/works/", {
+    method: "POST",
+    body: formData,
+    headers: {
+      Authorization: "Bearer " + token,
+      accept: "application/json",
+    },
+  })
+    .then((response) => response.json())
+    .then(async (data) => {
+      works = await getWorks();
+      displayWorks(works);
+      displayModalWorks(works);
+      clearAdd();
+    });
+});
 
 function previewImage() {
   fileInput.addEventListener("change", () => {
@@ -165,129 +348,34 @@ function previewImage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        previewImg.src = e.target.result;
-        previewImg.alt = "Prévisualisation de l'image";
-        previewImg.style.display = "flex";
-        fileLabel.style.display = "none";
-        fileIcon.style.display = "none";
-        fileParagraph.style.display = "none";
+        fileImage.src = e.target.result;
+        fileImage.alt = "Prévisualisation de l'image";
+        toggleDisplay(fileImage, "flex");
+        toggleDisplay(fileLabel, "none");
+        toggleDisplay(fileIcon, "none");
+        toggleDisplay(fileParagraph, "none");
       };
       reader.readAsDataURL(file);
     }
   });
 }
 
-function editionMode() {
-  //Modification bouton de connexion
-  authButton.innerHTML = "";
-  const logoutButton = document.createElement("div");
-  logoutButton.innerHTML = "logout";
-  const logout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "../index.html";
-  };
-  logoutButton.addEventListener("click", logout);
-  authButton.appendChild(logoutButton);
-  //Création topbar
-  const topBar = document.createElement("div");
-  const topBarText = document.createElement("span");
-  topBarText.className = "topBarText";
-  topBarText.innerHTML =
-    '<i class="fa-regular fa-pen-to-square"></i> Mode édition';
-  topBar.className = "topBar";
-  header.classList.add("mt20");
-  topBar.appendChild(topBarText);
-  body.appendChild(topBar);
-  //Création bouton modifier
-  const editButton = document.createElement("button");
-  editButton.className = "editButton";
-  editButton.innerHTML = '<i class="fa-regular fa-pen-to-square"></i> modifier';
-  projectTitle.appendChild(editButton);
-  //Ouverture modal
-  editButton.addEventListener("click", () => {
-    modalContainer.style.display = "flex";
-    displayModalWorks(works);
-  });
-}
-
-function closeModal() {
-  //Fermeture modal
-  xmark.addEventListener("click", () => {
-    modalContainer.style.display = "none";
-    clearModal();
-  });
-  modalContainer.addEventListener("click", (e) => {
-    if (e.target.className == "modalContainer") {
-      modalContainer.style.display = "none";
-      clearModal();
-    }
-  });
-}
-
-async function deleteWork(id) {
-  const trashes = document.getElementsByClassName("fa-trash-can");
-  for (const trash of trashes) {
-    if (trash.id == id) {
-      const init = {
-        method: "DELETE",
-        headers: {
-          accept: "*/*",
-          Authorization: "Bearer " + token,
-        },
-      };
-      fetch("http://localhost:5678/api/works/" + id, init)
-        .then((response) => {
-          if (response.status !== 204) {
-            console.log("Erreur lors de la suppression");
-          }
-        })
-        .then(async (data) => {
-          works = await getWorks();
-          displayWorks(works);
-          displayModalWorks(works);
-        });
-    }
+function toggleDisplay(element, displayMode) {
+  if (displayMode === "flex") {
+    element.classList.add("display-flex");
+    element.classList.remove("display-none");
+  } else if (displayMode === "none") {
+    element.classList.add("display-none");    
+    element.classList.remove("display-flex");
   }
 }
 
-async function addWork() {
-  checkInputsFilled();
-  modalForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const formData = new FormData(modalForm);
-    fetch("http://localhost:5678/api/works/", {
-      method: "POST",
-      body: formData,
-      headers: {
-        Authorization: "Bearer " + token,
-        accept: "application/json",
-      },
-    })
-      .then((response) => response.json())
-      .then(async (data) => {
-        works = await getWorks();
-        displayWorks(works);
-        displayModalWorks(works);
-        modalContainer.style.display = "none";
-        clearModal();
-      });
-  });
-}
-
-function checkInputsFilled() {
-  modalForm.addEventListener("input", () => {
-    if (
-      fileInput.value !== "" &&
-      formTitle.value !== "" &&
-      formCategory.value !== ""
-    ) {
-      formButton.disabled = false;
-      formButton.style.backgroundColor = "#1d6154";
-      formButton.classList.add("hoverButton");
-    } else {
-      formButton.disabled = true;
-      formButton.style.backgroundColor = "#A7A7A7";
-      formButton.classList.remove("hoverButton");
-    }
-  });
+function changeBackgroundColor(element, state) {
+  if (state === "enabled") {
+    element.classList.add("bg-color-enabled");
+    element.classList.remove("bg-color-disabled");
+  } else if (state === "disabled") {
+    element.classList.add("bg-color-disabled");    
+    element.classList.remove("bg-color-enabled");
+  }
 }
